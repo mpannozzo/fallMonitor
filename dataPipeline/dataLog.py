@@ -5,7 +5,7 @@ import csv
 # Change 'COM3' to match your Pico's actual port (e.g., 'COM4', 'COM5')
 COM_PORT = 'COM3'  
 BAUD_RATE = 115200 
-FILE_NAME = 'adlRaw.csv'
+FILE_NAME = 'Test6-16.csv'
 
 try:
     # Open the physical hardware port

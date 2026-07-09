@@ -111,7 +111,7 @@ int main() {
 
         // Rolling window
         add_reading(&fall_buffer, accel_x, accel_y, accel_z);
-        printf("%.2f,%.2f,%.2f, %d\n", accel_x, accel_y, accel_z, fall_buffer.write_index);
+        //printf("%.2f,%.2f,%.2f, %d\n", accel_x, accel_y, accel_z, fall_buffer.write_index);
 
         
     
@@ -126,7 +126,9 @@ int main() {
                 flattened_data[i * 3 + 2] = fall_buffer.readings[i].z;
             }
             
-            
+            for (int i = 0; i < 300; i++) {
+                printf("%.2f ", flattened_data[i]);
+            }
             // 1. Declare the "manifest"
             signal_t signal;
 
