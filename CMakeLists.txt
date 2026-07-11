@@ -92,7 +92,7 @@ endfunction()
 # 4. Firmware targets (each produces its own .uf2)
 # ---------------------------------------------------------
 # Data collection / testing build  -> dataCollection.uf2
-add_firmware_target(dataCollection fallMonitor.cpp)
+add_firmware_target(dataCollection dataCollection.cpp)
 
 # Inference / final product build  -> inference.uf2
 add_firmware_target(inference inference.cpp)

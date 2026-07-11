@@ -7,7 +7,7 @@
 #define I2C_PORT i2c0
 #define SDA_PIN 0
 #define SCL_PIN 1
-#define FALL_INPUT 2
+#define FALL_OUTPUT 2
 #define MPU6050_ADDR 0x68 
 #include <stdbool.h> 
 
@@ -66,9 +66,8 @@ int main() {
     i2c_init(I2C_PORT, 100 * 1000);
     gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
-    gpio_init(FALL_INPUT);
-    gpio_set_dir(FALL_INPUT, GPIO_IN);
-    gpio_pull_down(FALL_INPUT);
+    gpio_init(FALL_OUTPUT);
+    gpio_set_dir(FALL_OUTPUT, GPIO_OUT);
     gpio_pull_up(SDA_PIN);
     gpio_pull_up(SCL_PIN);
 
@@ -107,14 +106,12 @@ int main() {
         float accel_y = (accel_y_raw / 16384.0) * 9.81;
         float accel_z = (accel_z_raw / 16384.0) * 9.81;
 
-        fallIndicator = gpio_get(FALL_INPUT);
+        
 
         // Rolling window
         add_reading(&fall_buffer, accel_x, accel_y, accel_z);
-        //printf("%.2f,%.2f,%.2f, %d\n", accel_x, accel_y, accel_z, fall_buffer.write_index);
 
         
-    
         if (fall_buffer.is_full) {
            
             printf("Buffer Full. Running Classifier...\n");
@@ -153,8 +150,14 @@ int main() {
             else {
                 // Output the result
                 printf("Predictions: Fall: %.2f\n", result.classification[1].value);
+                if (result.classification[1].value > 0.8) {
+                    printf("Fall Detected!\n");
+                    gpio_put(FALL_OUTPUT, 1); // Set the output pin high to indicate a fall
+                } else {
+                    printf("No Fall Detected.\n");
+                    gpio_put(FALL_OUTPUT, 0); // Set the output pin low to indicate no fall
                 }
-            
+            }
             fall_buffer.is_full = false; // reset the buffer full flag to start filling again
             }
 

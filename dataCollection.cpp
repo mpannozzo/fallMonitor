@@ -15,8 +15,6 @@
 // (50 samples per second * 2 seconds = 100 slots)
 #define BUFFER_SIZE 100 
 
-float flattened_data[300]; // global array to hold the flattened data for the classifier (100 samples * 3 axes)
-
 // 1. Structure for a single reading
 typedef struct {
     float x;
@@ -48,17 +46,6 @@ void add_reading(CircularBuffer* buffer, float new_x, float new_y, float new_z) 
     }
 } 
 
-int get_data_callback(size_t offset, size_t length, float *out_ptr) {
-    // We want to fetch 'length' number of samples.
-    for (size_t i = 0; i < length; i++) {
-        // We look into your circular buffer, starting at the 
-        // offset provided by the library, and copy it into the 
-        // 'out_ptr' which is the memory address the library provided.
-        out_ptr[i] = flattened_data[offset + i]; 
-    }
-    return 0; 
-}
-
 int main() {
     stdio_init_all();
     bool fallIndicator = false; 
@@ -71,9 +58,6 @@ int main() {
     gpio_pull_down(FALL_INPUT);
     gpio_pull_up(SDA_PIN);
     gpio_pull_up(SCL_PIN);
-
-    
-
 
 
     // delay 10 seconds fro human setup (start serial monitor)
@@ -103,6 +87,7 @@ int main() {
         int16_t accel_y_raw = (data[2] << 8) | data[3];
         int16_t accel_z_raw = (data[4] << 8) | data[5];
 
+        //Converts to m/s^2
         float accel_x = (accel_x_raw / 16384.0) * 9.81;
         float accel_y = (accel_y_raw / 16384.0) * 9.81;
         float accel_z = (accel_z_raw / 16384.0) * 9.81;
@@ -111,54 +96,6 @@ int main() {
 
         // Rolling window
         add_reading(&fall_buffer, accel_x, accel_y, accel_z);
-        //printf("%.2f,%.2f,%.2f, %d\n", accel_x, accel_y, accel_z, fall_buffer.write_index);
-
-        
-    
-        if (fall_buffer.is_full) {
-           
-            printf("Buffer Full. Running Classifier...\n");
-
-
-            for (int i = 0; i < BUFFER_SIZE; i++) {
-                flattened_data[i * 3] = fall_buffer.readings[i].x;
-                flattened_data[i * 3 + 1] = fall_buffer.readings[i].y;
-                flattened_data[i * 3 + 2] = fall_buffer.readings[i].z;
-            }
-            
-            for (int i = 0; i < 300; i++) {
-                printf("%.2f ", flattened_data[i]);
-            }
-            // 1. Declare the "manifest"
-            signal_t signal;
-
-            // 2. Tell the model how much data total it should expect (50hz * 2 seconds = 100 samples, each with 3 axes = 300)
-            signal.total_length = 300;
-
-            // 3. Point the "get_data" pointer to your Librarian function
-            signal.get_data = &get_data_callback;
-
-            // 4. Create an empty result container
-            ei_impulse_result_t result = { 0 };
-
-            // 5. Run the classifier!
-            // The library will now use your 'signal' manifest to 
-            // call 'get_data_callback' as many times as it needs.
-            int err = run_classifier(&signal, &result, false);
-
-            // 6. Check for errors (Safety Gate)
-            if (err != EI_IMPULSE_OK) {
-                printf("ERR: Failed to run classifier (%d)\n", err);
-            } 
-            else {
-                // Output the result
-                printf("Predictions: Fall: %.2f\n", result.classification[1].value);
-                }
-            
-            fall_buffer.is_full = false; // reset the buffer full flag to start filling again
-            }
-
-                // Control the Sampling Rate (50Hz)
-                sleep_ms(20); 
+        printf("%.2f,%.2f,%.2f, %d, %d\n", accel_x, accel_y, accel_z, fall_buffer.write_index, fallIndicator);
     }
 }

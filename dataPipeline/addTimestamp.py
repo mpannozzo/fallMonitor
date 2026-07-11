@@ -12,4 +12,4 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python addTimestamp.py <path_to_raw_csv>")
     else:
-        addTimestamp(sys.argv[1])
+        addTimestamp(sy.argv[1])
