@@ -29,32 +29,70 @@ project(fallMonitor C CXX ASM)
 pico_sdk_init()
 
 # ---------------------------------------------------------
-# 3. Add your executable (Named "app" internally so Edge Impulse is happy)
-add_executable(app fallMonitor.cpp )
-
-# But tell the Pico SDK to output the final file as "fallMonitor.uf2"
-pico_set_program_name(app "fallMonitor")
-pico_set_program_version(app "0.1")
-
-# Enable USB output, disable UART on the "app" target
-pico_enable_stdio_uart(app 0)
-pico_enable_stdio_usb(app 1)
-
-# 4. Inject Edge Impulse SDK (it will automatically look for and attach to "app")
+# 3. Build the Edge Impulse SDK + trained model ONCE as a static library.
+#    This replaces the old "inject sources straight into a target named app"
+#    approach so that multiple executables can share the same model code.
+# ---------------------------------------------------------
 include(edge-impulse-sdk/cmake/utils.cmake)
-add_subdirectory(edge-impulse-sdk/cmake/zephyr)
+
+# Gather Edge Impulse SDK sources (mirrors edge-impulse-sdk/cmake/zephyr/CMakeLists.txt)
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk" "*.cpp")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk" "*.cc")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk" "*.s")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/DSP/Source/TransformFunctions" "*.c")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/DSP/Source/CommonTables" "*.c")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/DSP/Source/BasicMathFunctions" "*.c")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/DSP/Source/ComplexMathFunctions" "*.c")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/DSP/Source/FastMathFunctions" "*.c")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/DSP/Source/SupportFunctions" "*.c")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/DSP/Source/MatrixFunctions" "*.c")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/DSP/Source/StatisticsFunctions" "*.c")
+RECURSIVE_FIND_FILE_APPEND(EI_SOURCE_FILES "edge-impulse-sdk/CMSIS/NN/Source" "*.c")
+LIST(APPEND EI_SOURCE_FILES "edge-impulse-sdk/tensorflow/lite/c/common.c")
+
+# Gather the exported trained model sources
 RECURSIVE_FIND_FILE_APPEND(MODEL_SOURCE "tflite-model" "*.cpp")
 
-# Link our local files to the "app" target
-target_include_directories(app PRIVATE .)
-target_sources(app PRIVATE ${MODEL_SOURCE})
+add_library(edge_impulse STATIC ${EI_SOURCE_FILES} ${MODEL_SOURCE})
 
-# 5. Consolidated Linker (Standard Pico + Hardware + EI)
-target_link_libraries(app
-        pico_stdlib
-        hardware_i2c
-        hardware_timer
+# Expose include paths to anything that links this library.
+# ".": lets code use "edge-impulse-sdk/...", "tflite-model/...", "model-parameters/..."
+# "edge-impulse-sdk": lets the SDK use its internal "tensorflow/...", "CMSIS/..." includes
+target_include_directories(edge_impulse PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/edge-impulse-sdk
 )
+target_link_libraries(edge_impulse PUBLIC pico_stdlib)
 
-# Tell Pico to generate the .uf2 and .hex files for "app"
-pico_add_extra_outputs(app)
+# ---------------------------------------------------------
+# Helper to configure a firmware executable and emit its .uf2
+# ---------------------------------------------------------
+function(add_firmware_target target_name source_file)
+    add_executable(${target_name} ${source_file})
+    pico_set_program_name(${target_name} "${target_name}")
+    pico_set_program_version(${target_name} "0.1")
+
+    # USB serial on, UART off
+    pico_enable_stdio_uart(${target_name} 0)
+    pico_enable_stdio_usb(${target_name} 1)
+
+    target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+    target_link_libraries(${target_name}
+            edge_impulse
+            pico_stdlib
+            hardware_i2c
+            hardware_timer
+    )
+
+    # Generate .uf2 / .hex / etc.
+    pico_add_extra_outputs(${target_name})
+endfunction()
+
+# ---------------------------------------------------------
+# 4. Firmware targets (each produces its own .uf2)
+# ---------------------------------------------------------
+# Data collection / testing build  -> dataCollection.uf2
+add_firmware_target(dataCollection fallMonitor.cpp)
+
+# Inference / final product build  -> inference.uf2
+add_firmware_target(inference inference.cpp)
