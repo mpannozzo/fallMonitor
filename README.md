@@ -1,6 +1,6 @@
 # Fall Monitor — Edge AI / TinyML Fall-Detection Wearable
 
-> **Status: 🚧 Work in Progress.** The firmware, data pipeline, and trained model are functional on a Raspberry Pi Pico dev board. A **custom PCB is currently in transit** and will replace the breadboard prototype — hardware bring-up, enclosure design, and battery/power work are the next milestones.
+> **Status: Work in Progress.** The firmware, data pipeline, and trained model are functional on a Raspberry Pi Pico dev board. A **custom PCB is currently in transit** and will replace the breadboard prototype. Working to have final product by September 2026.
 
 A wearable device that detects human falls in real time using an on-device neural network. Accelerometer data is captured on a **Raspberry Pi Pico (RP2040)**, classified locally with a **TensorFlow Lite for Microcontrollers** model trained in **Edge Impulse**, and used to raise a fall alert — all without a network connection or the cloud.
 
@@ -29,7 +29,7 @@ A wearable device that detects human falls in real time using an on-device neura
 
 ## Overview
 
-Falls are a leading cause of injury, especially amongthe elderly and those prone to fainting or passing out. This project implements a compact, self-contained fall detector that runs entirely at the edge:
+Falls are a leading cause of injury, especially among the elderly and those prone to fainting or passing out. This project implements a compact, self-contained fall detector that runs entirely at the edge:
 
 - **Real-time inference** on a microcontroller: no external devices or internet required.
 - **Custom-trained model** built from data collected on the device itself, so the model learns from the exact sensor and mounting position it will run on.
