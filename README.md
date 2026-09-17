@@ -82,7 +82,7 @@ Falls are a leading cause of injury, especially among the elderly and those pron
 
 ## Design & Renders
 
-The custom PCB was designed in **[KiCad](https://www.kicad.org/)**. The board is currently in transit; the renders and mockups below capture the intended hardware.
+The custom PCB was designed in **[KiCad](https://www.kicad.org/)**
 
 <table>
   <tr>
@@ -205,8 +205,7 @@ The resulting labeled windows are uploaded to Edge Impulse for training.
 - [x] Serial data-logging and Python labeling/windowing pipeline
 - [x] Edge Impulse model trained and running on-device
 - [x] Design custom carrier board PCB (currently shipping)
-- [ ] Develop Physical housing for electronics
-- [ ] Fine-tune model with final hardware and more diverse data
+- [ ] Test model accuracy compared to threshold system
 
 
 
