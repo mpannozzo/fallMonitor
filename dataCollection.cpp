@@ -1,4 +1,8 @@
- 
+/*
+dataCollection.cpp
+Collects data from MPU6050 at 50Hz via serial communication
+Prints x,y,z acceleration in m/s^2 for further computation
+*/
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
@@ -97,5 +101,6 @@ int main() {
         // Rolling window
         add_reading(&fall_buffer, accel_x, accel_y, accel_z);
         printf("%.2f,%.2f,%.2f, %d, %d\n", accel_x, accel_y, accel_z, fall_buffer.write_index, fallIndicator);
+        sleep_ms(20);
     }
 }
