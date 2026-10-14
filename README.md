@@ -1,7 +1,5 @@
 # Fall Monitor — Edge AI / TinyML Fall-Detection Wearable
 
-> **Status: Testing ** The firmware, data pipeline, and trained model are functional on a Raspberry Pi Pico dev board. The custom PCB is fully functional and testing and accuracy analysis are in progrss.
-
 A wearable device that detects human falls in real time using an on-device neural network. Accelerometer data is captured on a **Raspberry Pi Pico (RP2040)**, classified locally with a **TensorFlow Lite for Microcontrollers** model trained in **Edge Impulse**, and used to raise a fall alert — all without a network connection or the cloud.
 
 ---
@@ -19,7 +17,8 @@ A wearable device that detects human falls in real time using an on-device neura
 - [Building & Flashing](#building--flashing)
 - [Data Pipeline](#data-pipeline)
 - [Model](#model)
-- [Roadmap](#roadmap)
+- [Iteration 1 Results](#iteration-1-results)
+- [Future Directions](#future-directions)
 - [Tech Stack](#tech-stack)
 - [License](#license)
 
@@ -75,7 +74,7 @@ Falls are a leading cause of injury, especially among the elderly and those pron
 | **Bus**       | I2C0 @ 100 kHz — `SDA = GPIO0`, `SCL = GPIO1`                                                                    |
 | **Fall I/O**  | `GPIO2` — button input for labeling during data collection / alert output during inference                       |
 | **Interface** | USB CDC serial (UART disabled) for logging and data capture                                                      |
-| **PCB**       | Custom board **in transit** — will consolidate the Pico + MPU-6050 + fall I/O into a single wearable form factor |
+| **PCB**       | Custom board consolidating the Pico + MPU-6050 + fall I/O into a single wearable form factor                     |
 
 
 
@@ -197,16 +196,37 @@ The resulting labeled windows are uploaded to Edge Impulse for training.
 | Alert threshold  | `P(Fall) > 0.80`                                    |
 
 
+## Iteration 1 Results
+
+Basic testing on a small held-out set of collected windows shows the model separating falls from everyday activity with high accuracy. The confusion matrix below reports how each true class was classified (rows = actual, columns = predicted):
+
+|              | Predicted ADL | Predicted Fall |
+| ------------ | :-----------: | :------------: |
+| **Actual ADL**  |    92%     |       8%       |
+| **Actual Fall** |    10%     |      90%       |
+| **F1 score**    |    0.94    |      0.86      |
+
+The model correctly recognizes normal activity **92%** of the time and catches **90%** of falls. The lower Fall F1 score (**0.86**) reflects a small number of missed falls (10% classified as ADL). These are first-iteration results from a modest dataset and establish a working baseline for the directions outlined below.
+
+Aggregate performance across both classes:
+
+| Metric                    | Value |
+| ------------------------- | :---: |
+| Area under ROC curve      | 0.91  |
+| Weighted avg. precision   | 0.92  |
+| Weighted avg. recall      | 0.91  |
+| Weighted avg. F1 score    | 0.92  |
 
 
-## Roadmap
 
-- [x] Accelerometer sampling & rolling-window firmware on the Pico
-- [x] Serial data-logging and Python labeling/windowing pipeline
-- [x] Edge Impulse model trained and running on-device
-- [x] Design custom carrier board PCB (currently shipping)
-- [ ] Test model accuracy compared to threshold system
+## Future Directions
 
+Potential next steps to grow Fall Monitor from a working prototype into a more capable product:
+
+- **Model fine-tuning** — expand the dataset and tune the network to raise Fall recall and reduce missed falls beyond the first-iteration baseline.
+- **Rigorous testing** — evaluate on a larger, more diverse set of subjects and activities to produce statistically meaningful accuracy figures.
+- **Comparative analysis** — benchmark the neural-network classifier against a simple acceleration-threshold detector to quantify the gains of the on-device model.
+- **Wi-Fi alert management** — add network connectivity (e.g. Pico W) for remote alerting, caregiver notifications, and event logging.
 
 
 ## Tech Stack
