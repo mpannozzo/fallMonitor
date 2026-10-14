@@ -5,9 +5,9 @@
 #include "edge-impulse-sdk/classifier/ei_run_classifier.h"
 
 #define I2C_PORT i2c0
-#define SDA_PIN 0
-#define SCL_PIN 1
-#define FALL_INPUT 2
+#define SDA_PIN 26
+#define SCL_PIN 27
+#define FALL_INPUT 12
 #define MPU6050_ADDR 0x68 
 #include <stdbool.h> 
 

@@ -4,10 +4,10 @@
 #include "hardware/i2c.h"
 #include "edge-impulse-sdk/classifier/ei_run_classifier.h"
 
-#define I2C_PORT i2c0
-#define SDA_PIN 0
-#define SCL_PIN 1
-#define FALL_OUTPUT 2
+#define I2C_PORT i2c1
+#define SDA_PIN 26
+#define SCL_PIN 27
+#define FALL_OUTPUT 7
 #define MPU6050_ADDR 0x68 
 #include <stdbool.h> 
 
@@ -61,6 +61,11 @@ int get_data_callback(size_t offset, size_t length, float *out_ptr) {
 
 int main() {
     stdio_init_all();
+    
+    sleep_ms(10000); 
+    printf("\n--- Waking up MPU6050 ---\n");
+    
+    
     bool fallIndicator = false; 
     // Initialize I2C hardware
     i2c_init(I2C_PORT, 100 * 1000);
@@ -71,17 +76,31 @@ int main() {
     gpio_pull_up(SDA_PIN);
     gpio_pull_up(SCL_PIN);
 
-    
+    printf("\n--initialized i2c--\n");
 
 
 
     // delay 10 seconds fro human setup (start serial monitor)
-    sleep_ms(10000); 
-    printf("\n--- Waking up MPU6050 ---\n");
+    
 
     // wake sensor
+    //i2c_write_blocking(I2C_PORT, MPU6050_ADDR, wake_command, 2, false);
+    //printf("\n--- MPU6050 Woken Up ---\n");
     uint8_t wake_command[2] = {0x6B, 0x00};
-    i2c_write_blocking(I2C_PORT, MPU6050_ADDR, wake_command, 2, false);
+    
+    printf("Sending wake command to MPU6050...\n");
+    
+    // Attempt to write, but give up after 100,000 microseconds (100ms)
+    int result = i2c_write_timeout_us(I2C_PORT, MPU6050_ADDR, wake_command, 2, false, 100000);
+    
+    if (result == PICO_ERROR_GENERIC) {
+        printf("ERROR: MPU6050 not found! (Device didn't acknowledge)\n");
+    } else if (result == PICO_ERROR_TIMEOUT) {
+        printf("ERROR: I2C bus timed out! (SDA/SCL lines might be stuck or disconnected)\n");
+    } else {
+        printf("SUCCESS: MPU6050 awake! Wrote %d bytes.\n", result);
+    }
+
     // define buffer instance
     CircularBuffer fall_buffer;
     fall_buffer.write_index = 0;
