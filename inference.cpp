@@ -1,4 +1,9 @@
-
+/*
+inference.cpp
+Real-time inference script for operation on rp2040
+Reads MPU-6050 data at 50hZ and inferences pre-quantized model every 2 seconds (100 samples)
+Sets fall output pin high 
+*/
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
@@ -9,6 +14,7 @@
 #define SCL_PIN 27
 #define FALL_OUTPUT 7
 #define MPU6050_ADDR 0x68 
+#define FALL_THRESHOLD .8
 #include <stdbool.h> 
 
 // Define the size based on sampling rate
@@ -151,15 +157,13 @@ int main() {
             // 2. Tell the model how much data total it should expect (50hz * 2 seconds = 100 samples, each with 3 axes = 300)
             signal.total_length = 300;
 
-            // 3. Point the "get_data" pointer to your Librarian function
+            // 3. Point the "get_data" pointer to Librarian function
             signal.get_data = &get_data_callback;
 
             // 4. Create an empty result container
             ei_impulse_result_t result = { 0 };
 
-            // 5. Run the classifier!
-            // The library will now use your 'signal' manifest to 
-            // call 'get_data_callback' as many times as it needs.
+            // 5. Run the classifier
             int err = run_classifier(&signal, &result, false);
 
             // 6. Check for errors (Safety Gate)
@@ -169,7 +173,7 @@ int main() {
             else {
                 // Output the result
                 printf("Predictions: Fall: %.2f\n", result.classification[1].value);
-                if (result.classification[1].value > 0.8) {
+                if (result.classification[1].value > FALL_THRESHOLD) {
                     printf("Fall Detected!\n");
                     gpio_put(FALL_OUTPUT, 1); // Set the output pin high to indicate a fall
                 } else {
